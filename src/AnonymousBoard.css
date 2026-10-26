@@ -1,0 +1,362 @@
+/* 익명 게시판 전체 */
+.anonymous-board {
+  width: 100%;
+  box-sizing: border-box;
+  color: inherit;
+  text-align: left;
+}
+
+/* 공통 back-button 스타일을 그대로 사용 */
+.anonymous-board > .back-button {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 10px;
+}
+
+/* 제목을 위쪽으로 당기기 */
+.anonymous-board-title {
+  margin: 4px 0 22px;
+  padding: 0;
+  color: inherit;
+  font-size: clamp(1.45rem, 4vw, 1.8rem);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.045em;
+}
+
+/* 글 작성 영역 */
+.anonymous-write-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 24px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.anonymous-write-label {
+  color: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* 실제 글을 입력하는 칸 */
+.anonymous-content-input {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 15px 16px;
+
+  border: 1px solid rgba(244, 143, 177, 0.38);
+  border-radius: 12px;
+
+  background: rgba(244, 143, 177, 0.055);
+  color: inherit;
+
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.75;
+
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.anonymous-content-input::placeholder {
+  color: inherit;
+  opacity: 0.42;
+}
+
+.anonymous-content-input:focus {
+  border-color: #f08db3;
+  background: rgba(244, 143, 177, 0.09);
+  box-shadow: 0 0 0 3px rgba(240, 141, 179, 0.1);
+}
+
+/* 글자 수 + 작성 버튼 */
+.anonymous-write-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.anonymous-write-footer > span {
+  color: inherit;
+  opacity: 0.55;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 분홍색 작성 버튼 */
+.anonymous-submit-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 38px;
+  padding: 9px 19px;
+
+  border: 1px solid #ef9ab9;
+  border-radius: 9px;
+
+  background: #ef9ab9;
+  color: #35202b;
+
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.anonymous-submit-button:hover:not(:disabled) {
+  background: #f7b5cd;
+  border-color: #f7b5cd;
+  transform: translateY(-1px);
+}
+
+.anonymous-submit-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 오류 및 게시글이 없을 때 */
+.anonymous-error {
+  margin: 12px 0;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 120, 150, 0.3);
+  border-radius: 9px;
+  background: rgba(255, 120, 150, 0.07);
+  color: #f2a3b8;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.anonymous-empty {
+  margin: 20px 0;
+  padding: 22px 12px;
+  color: inherit;
+  opacity: 0.58;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* 게시글 목록 */
+.anonymous-post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 작성 완료된 게시글 카드 */
+.anonymous-post {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 17px 12px;
+
+  border: 1px solid rgba(244, 143, 177, 0.2);
+  border-radius: 12px;
+
+  background: rgba(244, 143, 177, 0.035);
+  color: inherit;
+
+  box-shadow: none;
+  overflow-wrap: anywhere;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.anonymous-post:hover {
+  border-color: rgba(244, 143, 177, 0.38);
+  background: rgba(244, 143, 177, 0.055);
+}
+
+/* 게시글 본문 */
+.anonymous-post-content {
+  margin: 0 0 16px;
+  padding: 0;
+
+  color: inherit;
+  font-size: 0.94rem;
+  font-weight: 400;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 작성 날짜 및 액션 */
+.anonymous-post-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  padding-top: 10px;
+  border-top: 1px solid rgba(244, 143, 177, 0.13);
+}
+
+.anonymous-post-footer time {
+  color: inherit;
+  opacity: 0.5;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.anonymous-post-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 좋아요 */
+.anonymous-like-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  padding: 5px 7px;
+  border: none;
+  border-radius: 7px;
+
+  background: transparent;
+  color: inherit;
+
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.anonymous-like-button:hover {
+  background: rgba(244, 143, 177, 0.09);
+  transform: translateY(-1px);
+}
+
+.anonymous-like-button.is-liked {
+  color: #f08db3;
+}
+
+.anonymous-like-button span {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 삭제 */
+.anonymous-delete-button {
+  padding: 5px 8px;
+  border: 1px solid rgba(244, 143, 177, 0.22);
+  border-radius: 7px;
+
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.anonymous-delete-button:hover {
+  opacity: 1;
+  color: #f08db3;
+  border-color: rgba(244, 143, 177, 0.6);
+}
+
+/* 모바일 */
+@media (max-width: 480px) {
+  .anonymous-board-title {
+    margin-bottom: 18px;
+  }
+
+  .anonymous-content-input {
+    min-height: 110px;
+    padding: 13px;
+  }
+
+  .anonymous-post {
+    padding: 14px 13px 11px;
+  }
+
+  .anonymous-post-footer {
+    align-items: flex-start;
+  }
+
+  .anonymous-post-footer time {
+    max-width: 65%;
+  }
+}
+/* 게시판 전체 너비 줄이기 */
+.anonymous-board {
+  width: 100%;
+  max-width: 1080px;
+  min-width: 0;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+/* 모든 내부 요소가 부모 테두리 밖으로 나가지 않도록 */
+.anonymous-board *,
+.anonymous-board *::before,
+.anonymous-board *::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* 작성 영역과 게시글 목록 너비 통일 */
+.anonymous-write-form,
+.anonymous-content-input,
+.anonymous-write-footer,
+.anonymous-post-list,
+.anonymous-post {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* 입력창이 화면 밖으로 밀려나지 않도록 */
+.anonymous-content-input {
+  display: block;
+  resize: vertical;
+}
+
+/* 게시글 안의 긴 글도 가로로 튀어나오지 않도록 */
+.anonymous-post-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 바깥 패널의 둥근 테두리 안쪽에 콘텐츠 유지 */
+.anonymous-board {
+  overflow: hidden;
+}
