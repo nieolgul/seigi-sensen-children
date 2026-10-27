@@ -500,7 +500,7 @@ useEffect(() => {
 alert(
   data.user && data.user.identities?.length === 0
     ? '이미 가입된 이메일입니다.'
-    : '가입 요청 완료! 이메일 인증 링크를 확인해 주세요.',
+    : '가입이 승인되었습니다. 바로 로그인이 가능합니다.',
 )
       } else {
         const { error } = await supabase.auth.signInWithPassword({
