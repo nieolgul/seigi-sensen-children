@@ -22,11 +22,11 @@ const INITIAL_STATS = {
 
 function RadarChart({ stats }) {
   const center = 160
-  const radius = 100
+  const radius = 110
 
   const point = (index, value) => {
     const angle = (-90 + index * 60) * Math.PI / 180
-    const distance = radius * (value / 50)
+    const distance = radius * (value / 30)
 
     return {
       x: center + Math.cos(angle) * distance,
@@ -40,8 +40,6 @@ function RadarChart({ stats }) {
       return `${p.x},${p.y}`
     }).join(' ')
 
-  const grid = [10, 20, 30, 40, 50]
-
   return (
     <svg
       className="status-radar"
@@ -49,7 +47,7 @@ function RadarChart({ stats }) {
       role="img"
       aria-label="마법소녀 스테이터스 육각형 그래프"
     >
-      {grid.map((value) => (
+      {[6, 12, 18, 24, 30].map((value) => (
         <polygon
           key={value}
           points={polygonPoints(
@@ -62,7 +60,8 @@ function RadarChart({ stats }) {
       ))}
 
       {STAT_LIST.map((stat, index) => {
-        const p = point(index, 50)
+        const p = point(index, 30)
+
         return (
           <g key={stat.key}>
             <line
@@ -85,19 +84,17 @@ function RadarChart({ stats }) {
         )
       })}
 
-      <polygon
-        points={polygonPoints(stats)}
-        className="radar-value"
-      />
+      <polygon points={polygonPoints(stats)} className="radar-value" />
 
       {STAT_LIST.map((stat, index) => {
         const p = point(index, stats[stat.key])
+
         return (
           <circle
             key={stat.key}
             cx={p.x}
             cy={p.y}
-            r="4"
+            r="3"
             className="radar-dot"
           />
         )
@@ -112,31 +109,83 @@ export default function StatusManager({
   initialPoints = 10,
   onApply,
 }) {
+  const [savedStats] = useState(() => ({
+    ...INITIAL_STATS,
+    ...initialStats,
+  }))
+
+  const [savedPoints] = useState(initialPoints)
+
   const [stats, setStats] = useState(() => ({
     ...INITIAL_STATS,
     ...initialStats,
   }))
-  const [points, setPoints] = useState(initialPoints)
+
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
 
   const spent = useMemo(
-    () => STAT_LIST.reduce((sum, stat) => sum + stats[stat.key], 0),
+    () =>
+      STAT_LIST.reduce(
+        (sum, stat) => sum + stats[stat.key],
+        0
+      ),
     [stats]
   )
 
+  const availableToSpend = savedPoints -
+    STAT_LIST.reduce(
+      (sum, stat) =>
+        sum + Math.max(
+          0,
+          stats[stat.key] - savedStats[stat.key]
+        ),
+      0
+    )
+
   const changeStat = (key, value) => {
+    if (value === '') {
+      setStats((previous) => ({
+        ...previous,
+        [key]: '',
+      }))
+      setMessage('')
+      return
+    }
+
     const nextValue = Number(value)
-    const difference = nextValue - stats[key]
 
-    if (nextValue < 0 || nextValue > 50) return
-    if (difference > points) return
+    if (
+      !Number.isFinite(nextValue) ||
+      !Number.isInteger(nextValue) ||
+      nextValue < 0 ||
+      nextValue > 30
+    ) {
+      return
+    }
 
-    setStats((current) => ({
-      ...current,
+    const nextStats = {
+      ...stats,
       [key]: nextValue,
-    }))
-    setPoints((current) => current - difference)
+    }
+
+    const additionalSpent = STAT_LIST.reduce(
+      (sum, stat) =>
+        sum + Math.max(
+          0,
+          nextStats[stat.key] - savedStats[stat.key]
+        ),
+      0
+    )
+
+    if (additionalSpent > savedPoints) return
+
+    setStats(nextStats)
+    setMessage('')
+  }
+
+  const handleReset = () => {
+    setStats({ ...savedStats })
     setMessage('')
   }
 
@@ -146,12 +195,38 @@ export default function StatusManager({
       return
     }
 
+    // 빈 숫자 칸은 0으로 처리하고 저장
+    const finalStats = Object.fromEntries(
+      STAT_LIST.map((stat) => [
+        stat.key,
+        Number(stats[stat.key]) || 0,
+      ])
+    )
+
+    const additionalSpent = STAT_LIST.reduce(
+      (sum, stat) =>
+        sum + Math.max(
+          0,
+          finalStats[stat.key] - savedStats[stat.key]
+        ),
+      0
+    )
+
+    if (additionalSpent > savedPoints) {
+      setMessage('사용 가능한 포인트가 부족해요.')
+      return
+    }
+
     setSaving(true)
     setMessage('')
 
     try {
-      await onApply({ stats, points })
-      setMessage('적용 요청이 완료됐어요.')
+      await onApply({
+        stats: finalStats,
+        points: savedPoints - additionalSpent,
+      })
+
+      setMessage('적용이 완료되었습니다.')
     } catch (error) {
       setMessage(error.message || '적용에 실패했어요.')
     } finally {
@@ -162,8 +237,12 @@ export default function StatusManager({
   return (
     <main className="status-manager">
       <header className="status-heading">
-        <p className="status-eyebrow">MAGICAL GIRL STATUS</p>
+        <p className="status-eyebrow">
+          MAGICAL GIRL STATUS
+        </p>
+
         <h1>스테이터스 관리</h1>
+
         <p>
           {girl?.name_ko || girl?.name || '담당 마법소녀'}
           의 능력치를 관리합니다.
@@ -172,52 +251,99 @@ export default function StatusManager({
 
       <section className="status-layout">
         <article className="status-chart-panel">
-          <h2>STATUS CHART</h2>
-          <RadarChart stats={stats} />
+          <RadarChart stats={Object.fromEntries(
+            STAT_LIST.map((stat) => [
+              stat.key,
+              Number(stats[stat.key]) || 0,
+            ])
+          )} />
 
           <div className="status-total">
             <span>총 능력치</span>
-            <strong>{spent} / 300</strong>
+            <strong>{spent} / 180</strong>
           </div>
         </article>
 
         <article className="status-control-panel">
           <div className="status-point-card">
             <span>사용 가능 포인트</span>
-            <strong>{points} <small>P</small></strong>
+            <strong>
+              {availableToSpend} <small>P</small>
+            </strong>
           </div>
 
-          <h2>능력치 분배</h2>
+    
 
-          {STAT_LIST.map((stat) => (
-            <div className="status-slider-row" key={stat.key}>
-              <div className="status-slider-heading">
-                <label htmlFor={`stat-${stat.key}`}>
-                  {stat.label}
-                </label>
-                <strong>{stats[stat.key]} / 50</strong>
+          {STAT_LIST.map((stat) => {
+            const currentValue =
+              Number(stats[stat.key]) || 0
+
+            return (
+              <div
+                className="status-slider-row"
+                key={stat.key}
+              >
+                <div className="status-slider-heading">
+                  <label htmlFor={`stat-${stat.key}`}>
+                    {stat.label}
+                  </label>
+
+                  <div className="status-number-wrap">
+                    <input
+                      className="status-number-input"
+                      type="number"
+                      min="0"
+                      max="30"
+                      step="1"
+                      value={stats[stat.key]}
+                      disabled={saving}
+                      aria-label={`${stat.label} 능력치 숫자`}
+                      onChange={(event) =>
+                        changeStat(
+                          stat.key,
+                          event.target.value
+                        )
+                      }
+                      onBlur={() => {
+                        if (stats[stat.key] === '') {
+                          changeStat(stat.key, 0)
+                        }
+                      }}
+                    />
+
+                    <span className="status-number-max">
+                      / 30
+                    </span>
+                  </div>
+                </div>
+
+                <input
+                  id={`stat-${stat.key}`}
+                  className="status-range"
+                  type="range"
+                  min="0"
+                  max="30"
+                  step="1"
+                  value={currentValue}
+                  disabled={saving}
+                  style={{
+                    '--range-progress':
+                      `${(currentValue / 30) * 100}%`,
+                  }}
+                  onChange={(event) =>
+                    changeStat(
+                      stat.key,
+                      event.target.value
+                    )
+                  }
+                />
               </div>
-
-              <input
-                id={`stat-${stat.key}`}
-                type="range"
-                min="0"
-                max={Math.min(50, stats[stat.key] + points)}
-                step="1"
-                value={stats[stat.key]}
-                onChange={(event) =>
-                  changeStat(stat.key, event.target.value)
-                }
-                style={{
-                  '--range-progress': `${stats[stat.key] * 2}%`,
-                }}
-              />
-            </div>
-          ))}
+            )
+          })}
 
           <p className="status-help">
-            포인트를 사용해 능력치를 올릴 수 있어요.
-            적용 후에는 사용한 포인트가 환급되지 않습니다.
+            적용 전까지 자유롭게 능력치를 조정할 수 있습니다.<br/>
+            적용을 누르면 변경 내용이 저장됩니다.
           </p>
 
           <button
@@ -229,11 +355,22 @@ export default function StatusManager({
             {saving ? '적용 중...' : '적용하기'}
           </button>
 
-          {message && (
-            <p className="status-message" role="status">
-              {message}
-            </p>
-          )}
+                    <div className="status-bottom-row">
+            <button
+              type="button"
+              className="back-button"
+              disabled={saving}
+              onClick={handleReset}
+                      >
+            <span className="back-button-label">변경 취소</span>
+          </button>
+
+            {message && (
+              <p className="status-message" role="status">
+                {message}
+              </p>
+            )}
+          </div>
         </article>
       </section>
     </main>

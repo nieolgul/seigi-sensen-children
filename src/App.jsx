@@ -20,8 +20,28 @@ const [headshotFile, setHeadshotFile] = useState(null)
 const [standingFile, setStandingFile] = useState(null)
 const [headshotUrl, setHeadshotUrl] = useState('')
 const [standingUrl, setStandingUrl] = useState('')
+const getHeadshotUrl = (path) => {
+  if (!path) return ''
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+
+  const { data } = supabase.storage
+    .from('character-images')
+    .getPublicUrl(path)
+
+  return data.publicUrl
+}
 
 const [walletTransactions, setWalletTransactions] = useState([])
+
+const [shopItems, setShopItems] = useState([])
+const [inventoryItems, setInventoryItems] = useState([])
+const [shopLoading, setShopLoading] = useState(false)
+const [shopMessage, setShopMessage] = useState('')
+const [buyingItem, setBuyingItem] = useState('')
+
 const [walletLoading, setWalletLoading] = useState(false)
 const [walletMessage, setWalletMessage] = useState('')
 
@@ -144,8 +164,12 @@ const openStatusSelection = async () => {
 
 // 선택한 마법소녀의 능력치 불러오기
 const openManagedGirlStatus = async (girl) => {
-  setStatusLoading(true)
+  // 먼저 화면을 전환해서 로딩 화면을 표시
+  setSelectedManagedGirl(girl)
+  setStatusRecord(null)
   setStatusMessage('')
+  setStatusLoading(true)
+  setPage('statusManager')
 
   try {
     const {
@@ -165,9 +189,7 @@ const openManagedGirlStatus = async (girl) => {
 
     if (error) throw error
 
-    setSelectedManagedGirl(girl)
     setStatusRecord(data)
-    setPage('statusManager')
   } catch (error) {
     console.error(error)
     setStatusMessage(
@@ -177,6 +199,70 @@ const openManagedGirlStatus = async (girl) => {
     setStatusLoading(false)
   }
 }
+
+
+const saveManagedGirlStatus = async ({ stats, points }) => {
+  if (!selectedManagedGirl) {
+    throw new Error('마법소녀를 먼저 선택해 주세요.')
+  }
+
+  if (!statusRecord) {
+    throw new Error(
+      '저장할 스테이터스 기록이 없습니다. 먼저 DB에 초기 기록을 만들어야 합니다.'
+    )
+  }
+
+  const statKeys = [
+    'luck',
+    'power',
+    'health',
+    'defense',
+    'agility',
+    'skill',
+  ]
+
+  const originalStats = Object.fromEntries(
+    statKeys.map((key) => [key, Number(statusRecord[key] ?? 0)])
+  )
+
+  let spentNow = 0
+
+  for (const key of statKeys) {
+    const increase = Number(stats[key]) - originalStats[key]
+
+    if (increase < 0) {
+      throw new Error('이미 투자한 능력치는 낮출 수 없습니다.')
+    }
+
+    if (increase > 0) {
+      const { error } = await supabase.rpc(
+        'invest_magical_girl_stat',
+        {
+          p_girl_id: selectedManagedGirl.id,
+          p_stat: key,
+          p_amount: increase,
+        }
+      )
+
+      if (error) throw error
+
+      spentNow += increase
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('magical_girl_status')
+    .select('*')
+    .eq('girl_id', selectedManagedGirl.id)
+    .eq('commander_id', statusRecord.commander_id)
+    .single()
+
+  if (error) throw error
+
+  setStatusRecord(data)
+  setStatusMessage('')
+}
+
 
 const walletIncome = walletTransactions
   .filter((item) => item.type === 'income')
@@ -188,6 +274,114 @@ const walletExpense = walletTransactions
 
 const walletBalance = walletIncome - walletExpense
 
+
+const loadShopItems = async () => {
+  setShopLoading(true)
+  setShopMessage('')
+
+  try {
+    const { data, error } = await supabase
+      .from('shop_items')
+      .select('*')
+      .eq('is_active', true)
+      .order('price', { ascending: true })
+
+    if (error) throw error
+    setShopItems(data ?? [])
+  } catch (error) {
+    setShopMessage(error.message || '상점 목록을 불러오지 못했습니다.')
+  } finally {
+    setShopLoading(false)
+  }
+}
+
+
+
+const loadInventoryItems = async () => {
+  setShopLoading(true)
+  setShopMessage('')
+
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError) throw userError
+    if (!user) throw new Error('다시 로그인해 주세요.')
+
+    const { data, error } = await supabase
+      .from('inventories')
+      .select(`
+        id,
+        quantity,
+        item_id,
+        shop_items (
+          id,
+          item_key,
+          name,
+          description,
+          image_path
+        )
+      `)
+      .eq('commander_id', user.id)
+      .gt('quantity', 0)
+
+    if (error) throw error
+
+    setInventoryItems(data ?? [])
+  } catch (error) {
+    setShopMessage(
+      error.message || '인벤토리를 불러오지 못했습니다.'
+    )
+  } finally {
+    setShopLoading(false)
+  }
+}
+
+const purchaseItem = async (item) => {
+  if (buyingItem) return
+
+  const quantity = 1
+  setBuyingItem(item.item_key)
+  setShopMessage('')
+
+  try {
+    const { data, error } = await supabase.rpc('purchase_shop_item', {
+      p_item_key: item.item_key,
+      p_quantity: quantity,
+    })
+
+    if (error) throw error
+
+    // 구매 결과를 화면에 반영
+    const { data: { user }, error: userError } =
+      await supabase.auth.getUser()
+
+    if (userError) throw userError
+    if (!user) throw new Error('다시 로그인해 주세요.')
+
+    const { data: transactions, error: transactionError } =
+      await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('commander_id', user.id)
+        .order('created_at', { ascending: false })
+
+    if (transactionError) throw transactionError
+    setWalletTransactions(transactions ?? [])
+
+    await loadInventoryItems()
+
+    setShopMessage(
+      `${data.item_name} ${data.quantity}개를 구매했습니다.`
+    )
+  } catch (error) {
+    setShopMessage(error.message || '구매에 실패했습니다.')
+  } finally {
+    setBuyingItem('')
+  }
+}
 
 const handleAddTransaction = async (e) => {
   e.preventDefault()
@@ -680,7 +874,7 @@ const handleSaveGirl = async (e) => {
       alt="正義戦線⭐︎チルドレン"
       role="button"
       tabIndex={0}
-      title="ホームに戻る"
+      title="HOME"
       onClick={() => {
         setPage('home')
         setSelectedQuest(null)
@@ -769,7 +963,7 @@ const handleSaveGirl = async (e) => {
         <span className="dashboard-icon">✦</span>
         <strong>일일 임무</strong>
         <span className="dashboard-description">
-          지휘관 전용 카테고리입니다.
+          지휘관 전용 카테고리입니다.<br />
           일일 임무를 진행하고 마법소녀를 육성하세요.
         </span>
         <span className="dashboard-arrow">↗</span>
@@ -783,14 +977,18 @@ const handleSaveGirl = async (e) => {
         <span className="dashboard-icon">✎</span>
         <strong>익명 게시판</strong>
         <span className="dashboard-description">
-          하고 싶은 말을 자유롭게 남겨 보세요. 모든 글은 익명으로 표시됩니다.
+          하고 싶은 말을 자유롭게 남겨 보세요.<br />
+          모든 글은 익명으로 표시됩니다.
         </span>
         <span className="dashboard-arrow">↗</span>
       </button>
 
       <button
         className="dashboard-item"
-        onClick={() => alert('상점은 다음 단계에서 만들자!')}
+        onClick={async () => {
+  setPage('shop')
+  await loadShopItems()
+}}
       >
         <span className="dashboard-number">03 / SHOP</span>
         <span className="dashboard-icon">♢</span>
@@ -829,6 +1027,106 @@ const handleSaveGirl = async (e) => {
     </button>
   </div>
   
+
+) : page === 'statusSelect' && isLoggedIn ? (
+  <div className="auth-panel">
+    <button
+      className="back-button"
+      onClick={() => setPage('mypage')}
+    >
+      ← BACK
+    </button>
+
+    <p className="auth-kicker">MAGICAL GIRL ARCHIVE</p>
+    <h2>담당 마법소녀 관리</h2>
+
+{statusLoading ? (
+  <p>목록을 불러오는 중...</p>
+) : managedGirls.length === 0 ? (
+  <p>담당 중인 마법소녀가 없습니다.</p>
+) : (
+  <div className="magical-girl-grid">
+    {managedGirls.map((girl) => (
+      <button
+        className="magical-girl-item"
+        key={girl.id}
+        onClick={() => openManagedGirlStatus(girl)}
+      >
+        <span className="magical-girl-portrait">
+          {girl.headshot_url ? (
+            <img
+  src={getHeadshotUrl(girl.headshot_url)}
+  alt={girl.name_ko || girl.name || '마법소녀'}
+/>
+          ) : (
+            <span className="portrait-placeholder">✦</span>
+          )}
+        </span>
+
+        <span className="magical-girl-name">
+          {girl.name_ko || girl.name || '이름 없는 마법소녀'}
+        </span>
+      </button>
+    ))}
+  </div>
+)}
+
+    {statusMessage && (
+      <p role="status">{statusMessage}</p>
+    )}
+  </div>
+
+) : page === 'statusManager' && isLoggedIn ? (
+  <div className="auth-panel">
+    <button
+      className="back-button"
+      onClick={() => {
+        setPage(
+          magicalGirl?.position === 'commander'
+            ? 'statusSelect'
+            : 'mypage'
+        )
+        setStatusMessage('')
+      }}
+    >
+      ← BACK
+    </button>
+
+{statusLoading ? (
+  <StatusLoadingScreen />
+) : selectedManagedGirl ? (
+      <>
+        {statusRecord ? (
+          <StatusManager
+            key={selectedManagedGirl.id}
+            girl={selectedManagedGirl}
+            initialStats={{
+              luck: statusRecord.luck,
+              power: statusRecord.power,
+              health: statusRecord.health,
+              defense: statusRecord.defense,
+              agility: statusRecord.agility,
+              skill: statusRecord.skill,
+            }}
+            initialPoints={statusRecord.available_points}
+            onApply={saveManagedGirlStatus}
+          />
+        ) : (
+          <p>
+            저장된 스테이터스 기록이 없습니다.<br />
+            초기 기록을 만든 뒤 다시 시도해 주세요.
+          </p>
+        )}
+      </>
+    ) : (
+      <p>마법소녀를 선택해 주세요.</p>
+    )}
+
+    {statusMessage && (
+      <p role="status">{statusMessage}</p>
+    )}
+  </div>
+
 
 ) : page === 'girlSelect' && isLoggedIn ? (
   <main className="girl-select-page">
@@ -979,15 +1277,19 @@ onClick={async () => {
         <span className="dashboard-arrow">↗</span>
       </button>
 
-      <button
-        className="dashboard-item"
-        onClick={() => alert('인벤토리 기능은 다음 단계에서 연결할게!')}
-      >
-        <span className="dashboard-number">02 / INVENTORY</span>
-        <strong>인벤토리</strong>
-        <span className="dashboard-arrow">↗</span>
 
-      </button>
+<button
+  className="dashboard-item"
+  onClick={() => {
+    setPage('inventory')
+    setShopMessage('')
+  }}
+>
+  <span className="dashboard-number">02 / INVENTORY</span>
+  <strong>인벤토리</strong>
+  <span className="dashboard-arrow">↗</span>
+</button>
+
     </div>
 
   </div>
@@ -1110,7 +1412,7 @@ onClick={async () => {
               setGirlMessage('')
             }}
           >
-            CANCEL / BACK TO PROFILE
+            CANCEL / BACK
           </button>
         )}
 
@@ -1123,6 +1425,160 @@ onClick={async () => {
     )}
   </div>
 
+) : page === 'inventory' && isLoggedIn ? (
+  <div className="auth-panel shop-page">
+    <button
+      type="button"
+      className="back-button"
+      onClick={() => {
+        setPage('mypage')
+        setShopMessage('')
+      }}
+    >
+      ← BACK
+    </button>
+
+    <p className="auth-kicker">ACCOUNT / INVENTORY</p>
+    <h2>인벤토리</h2>
+
+    <div className="dashboard-notice">
+      <span>◆ INVENTORY GUIDE</span>
+      <p>
+        보유 중인 아이템을 확인할 수 있습니다.
+        <br />
+        아이템을 구매하면 이곳에 자동으로 반영됩니다.
+      </p>
+    </div>
+
+    {shopLoading && (
+      <p className="auth-description">인벤토리를 불러오는 중...</p>
+    )}
+
+    {!shopLoading && inventoryItems.length === 0 && (
+      <p className="auth-description">
+        아직 보유한 아이템이 없습니다.
+      </p>
+    )}
+
+    <div className="dashboard-grid">
+      {inventoryItems.map((item) => {
+        const shopItem = item.shop_items
+
+        if (!shopItem) return null
+
+        return (
+          <article
+            className="dashboard-item shop-item"
+            key={item.id}
+          >
+            <div className="shop-item-info">
+              <img
+                className="shop-item-image"
+                src={shopItem.image_path}
+                alt={shopItem.name}
+              />
+
+              <div className="shop-item-text">
+                <strong>{shopItem.name}</strong>
+                <p className="dashboard-description">
+                  {shopItem.description}
+                </p>
+                <span className="shop-item-battle">
+                  보유 수량: {item.quantity}개
+                </span>
+              </div>
+            </div>
+          </article>
+        )
+      })}
+    </div>
+
+    {shopMessage && (
+      <p className="auth-description" role="status">
+        {shopMessage}
+      </p>
+    )}
+  </div>
+
+) : page === 'shop' && isLoggedIn ? (
+  <div className="auth-panel shop-page">
+    <button
+      className="back-button"
+      onClick={() => {
+        setPage('home')
+        setShopMessage('')
+      }}
+    >
+      ← BACK
+    </button>
+
+    <p className="auth-kicker">COMMAND CENTER / SHOP</p>
+    <h2>상점</h2>
+
+    <div className="wallet-total">
+      <span>MY WALLET</span>
+      <strong>¥ {walletBalance.toLocaleString('ja-JP')}</strong>
+    </div>
+
+    <div className="dashboard-notice">
+      <span>◆ SHOP GUIDE</span>
+      <p>
+        모든 아이템은 상시 구매 및 사용이 가능합니다.<br />
+        일부 아이템은 전투 중에도 행동을 소모하지 않고 사용할 수 있습니다.<br />
+        아이템별 상세 설명을 확인해 주세요.
+      </p>
+    </div>
+
+    {shopLoading && <p>불러오는 중...</p>}
+
+    <div className="dashboard-grid">
+      {shopItems.map((item) => (
+        
+
+<article className="dashboard-item shop-item" key={item.id}>
+  <div className="shop-item-info">
+    <img
+      className="shop-item-image"
+      src={item.image_path}
+      alt={item.name}
+    />
+
+    <div className="shop-item-text">
+      <strong>{item.name}</strong>
+      <p className="dashboard-description">
+        {item.description}
+      </p>
+      <span className="shop-item-battle">
+        {item.battle_free ? '전투 중 사용 가능' : '전투 외 사용'}
+      </span>
+    </div>
+
+    <strong className="shop-item-price">
+      ¥ {item.price.toLocaleString('ja-JP')}
+    </strong>
+  </div>
+
+  <div className="shop-item-bottom">
+    <button
+      className="submit-button shop-buy-button"
+      disabled={!!buyingItem || shopLoading}
+      onClick={() => purchaseItem(item)}
+    >
+      {buyingItem === item.item_key ? 'PURCHASING...' : '구매하기'}
+    </button>
+  </div>
+</article>
+
+
+      ))}
+    </div>
+
+    {shopMessage && (
+      <p className="auth-description" role="status">
+        {shopMessage}
+      </p>
+    )}
+  </div>
 
 ) : page === 'wallet' && isLoggedIn ? (
   <div key="wallet-page" className="auth-panel wallet-panel">
@@ -1130,7 +1586,7 @@ onClick={async () => {
       setPage('mypage')
       setWalletMessage('')
     }}>
-      ← BACK TO MY PAGE
+      ← BACK
     </button>
 
     <p className="auth-kicker">ACCOUNT / WALLET</p>
@@ -1383,7 +1839,7 @@ onClick={async () => {
             </div>
           ) : (
 
-<div className="auth-panel">
+<div className="auth-panel shop-page">
   <button className="back-button" onClick={() => {
     setPage('home')
     setMessage('')
@@ -1488,5 +1944,35 @@ onClick={async () => {
     </main>
   )
 }
+
+
+function StatusLoadingScreen() {
+  return (
+    <div className="status-loading-screen">
+      <img
+        className="status-loading-logo"
+        src="/subpage-logo.svg"
+        alt="正義戦線⭐︎チルドレン"
+      />
+
+      <p className="status-loading-label">
+        STATUS RECORD
+      </p>
+
+      <div
+        className="status-loading-track"
+        role="progressbar"
+        aria-label="스테이터스 불러오는 중"
+      >
+        <div className="status-loading-bar" />
+      </div>
+
+      <p className="status-loading-caption">
+        마법소녀의 기록을 불러오는 중...
+      </p>
+    </div>
+  )
+}
+
 
 export default App

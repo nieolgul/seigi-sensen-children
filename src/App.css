@@ -327,7 +327,7 @@ button {
 ======================================== */
 
 .auth-panel {
-  width: min(100%, 390px);
+  width: min(100%, 860px);
   margin: 0 auto;
   padding: 26px 28px;
   border-top: 1px solid #8d3d68;
@@ -1737,4 +1737,404 @@ button {
 
 .subpage-logo {
   cursor: pointer;
+}
+
+/* 상점 화면만 넓게 */
+.auth-panel.shop-page {
+  width: min(100%, 720px);
+  box-sizing: border-box;
+}
+
+/* 상점 아이템 카드 */
+.shop-item {
+  padding: 12px 14px;
+  gap: 2px;
+  min-height: 0;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 이미지와 아이템 설명 */
+.shop-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 아이템 이미지 */
+.shop-item-image {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 54px;
+  object-fit: contain;
+}
+
+/* 아이템 이름과 설명 */
+.shop-item-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shop-item-text strong {
+  line-height: 1.4;
+}
+
+.shop-item-text .dashboard-description {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* 전투 관련 설명 */
+.shop-item-battle {
+  font-size: 11px;
+  color: #d98bb5;
+  line-height: 1.4;
+}
+
+
+/* 상점 가격표 */
+.shop-item-price {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-left: auto;
+
+  padding: 4px 7px;
+  background: #3b1830;
+  color: #fff;
+
+  border: 1px solid #582D45;
+  border-radius: 0;
+
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+
+/* 구매 버튼 영역 */
+.shop-item-bottom {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin-top: 12px;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+/* 구매 버튼 */
+.shop-item-bottom .shop-buy-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin: 0;
+  padding: 8px 18px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+/* 담당 마법소녀 관리 페이지 */
+.auth-panel .dashboard-grid {
+  margin-top: 28px;
+  gap: 18px;
+}
+
+
+/* 담당 마법소녀 관리 */
+.auth-panel .magical-girl-grid {
+  margin-top: 32px;
+  gap: 18px;
+}
+
+.auth-panel .magical-girl-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 104px;
+  padding: 16px;
+  text-align: left;
+}
+
+.magical-girl-portrait {
+  display: flex;
+  flex: 0 0 68px;
+  width: 68px;
+  height: 68px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #ed6baf;
+  border-radius: 50%;
+  background: #171017;
+}
+
+.magical-girl-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait-placeholder {
+  color: #ed6baf;
+  font-size: 28px;
+}
+
+.magical-girl-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+/* 마법소녀 선택: 이미지 + 이름 */
+.auth-panel .magical-girl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 16px;
+  margin-top: 36px;
+}
+
+.auth-panel .magical-girl-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.auth-panel .magical-girl-item:hover {
+  transform: translateY(-4px);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+.auth-panel .magical-girl-portrait {
+  display: block;
+  width: 130px;
+  height: 130px;
+  flex: 0 0 150px;
+  overflow: hidden;
+  border: none;
+  border-radius: 0;
+  background: #171017;
+}
+
+.auth-panel .magical-girl-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.auth-panel .portrait-placeholder {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #ed6baf;
+  font-size: 28px;
+}
+
+.auth-panel .magical-girl-name {
+  display: block;
+  width: 100%;
+  color: #f4dce9;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .auth-panel .magical-girl-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 12px;
+  }
+
+  .auth-panel .magical-girl-portrait {
+    max-width: 140px;
+  }
+}
+/* 담당 마법소녀 관리 페이지 */
+.auth-panel:has(.magical-girl-grid) {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 720px;
+  text-align: left;
+}
+
+/* 제목 영역의 왼쪽 기준 통일 */
+.auth-panel:has(.magical-girl-grid) .back-button {
+  display: block;
+  margin-left: 0;
+  padding-left: 0;
+  text-align: left;
+}
+
+.auth-panel:has(.magical-girl-grid) .auth-kicker {
+  margin-left: 0;
+  text-align: left;
+}
+
+.auth-panel:has(.magical-girl-grid) h2 {
+  width: 100%;
+  margin-left: 0;
+  text-align: left;
+}
+
+/* 두상 그리드의 시작점 통일 */
+.auth-panel:has(.magical-girl-grid) .magical-girl-grid {
+  width: 100%;
+  justify-content: start;
+  justify-items: start;
+  margin-left: 0;
+}
+
+/* 두상과 마법소녀 이름 사이 간격 */
+.auth-panel .magical-girl-item {
+  gap: 4px;
+}
+
+/* 영문 제목과 한글 제목 사이 간격 */
+.auth-panel:has(.magical-girl-grid) .auth-kicker {
+  margin-bottom: 4px;
+}
+
+.auth-panel:has(.magical-girl-grid) h2 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* 마법소녀 스테이터스 화면 안내 문구 */
+.auth-panel:has(.magical-girl-grid) {
+  /* 기존 화면에만 적용되는 선택자라면 아래에서 별도 수정 필요 */
+}
+
+/* ← BACK 버튼 */
+.auth-panel .back-button {
+  display: block;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+/* 안내 문구 */
+.auth-panel p {
+  text-align: left;
+}
+
+.auth-panel p {
+  font-size: 15px;
+}
+
+
+/* 마법소녀 스테이터스 전용 로딩 화면 */
+.status-loading-screen {
+  width: 100%;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 40px 20px;
+  box-sizing: border-box;
+  background: #080608;
+  color: #f4dce9;
+  text-align: center;
+}
+
+.status-loading-logo {
+  display: block;
+  width: min(280px, 80%);
+  max-height: 120px;
+  object-fit: contain;
+}
+
+.status-loading-label {
+  margin: 0;
+  color: #ed6baf;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  font-family: Georgia, serif;
+}
+
+.status-loading-track {
+  width: min(260px, 80%);
+  height: 2px;
+  overflow: hidden;
+  background: #38202f;
+}
+
+.status-loading-bar {
+  width: 40%;
+  height: 100%;
+  background: #ed6baf;
+  box-shadow: 0 0 10px #ed6baf;
+  animation: status-bar-move 1.4s ease-in-out infinite;
+}
+
+.status-loading-caption {
+  margin: -14px 0 0;
+  color: #a58a9a;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+@keyframes status-bar-move {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+@keyframes status-logo-glow {
+  0%, 100% {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 2px #ed6baf);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 9px #ed6baf);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-loading-logo,
+  .status-loading-bar {
+    animation: none;
+  }
+}
+
+@keyframes status-logo-glow {
+  0%, 100% {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 2px #ed6baf);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 9px #ed6baf);
+  }
 }
